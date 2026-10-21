@@ -1,0 +1,13 @@
+listen = 127.0.0.1:8090
+mode = __MODE__
+token = __TOKEN__
+upstream_host = 127.0.0.1
+upstream_port_http = 8082
+upstream_port_https = 8443
+upstream_use_orig_port = yes
+max_body = __MAXBODY__
+spool_dir = __RUN__/spool
+spool_memory = 1M
+log = __RUN__/guard.log
+log_passthrough = yes
+real_ip_headers = X-Guard-Orig-IP

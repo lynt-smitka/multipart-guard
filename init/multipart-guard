@@ -1,0 +1,53 @@
+#!/bin/bash
+# multipart-guard   sanitizing proxy for multipart/form-data (SysV init, e.g. CentOS 6)
+# chkconfig: 2345 84 16
+# description: nginx -> multipart-guard -> nginx/PHP-FPM
+# pidfile: /var/run/multipart-guard/guard.pid
+# config: /etc/multipart-guard/config
+
+. /etc/rc.d/init.d/functions
+
+prog=multipart-guard
+exec=/usr/local/sbin/$prog
+config=/etc/multipart-guard/config
+piddir=/var/run/$prog
+pidfile=$piddir/guard.pid
+user=multipart-guard
+stderr=/var/log/$prog/stderr.log
+lockfile=/var/lock/subsys/$prog
+
+start() {
+    [ -x $exec ] || exit 5
+    [ -f $config ] || exit 6
+    mkdir -p $piddir && chown $user $piddir
+    echo -n $"Starting $prog: "
+    # the guard writes the pidfile itself ("pidfile" in the config)
+    daemon --user=$user --pidfile=$pidfile "$exec -config $config >> $stderr 2>&1 &"
+    retval=$?
+    sleep 1
+    if [ -s $pidfile ] && kill -0 "$(cat $pidfile)" 2>/dev/null; then success; touch $lockfile; echo; return 0; fi
+    failure; echo; return 1
+}
+stop() {
+    echo -n $"Stopping $prog: "
+    killproc -p $pidfile $prog
+    retval=$?
+    echo
+    [ $retval -eq 0 ] && rm -f $lockfile
+    return $retval
+}
+reload() {
+    echo -n $"Reloading $prog log: "
+    killproc -p $pidfile $prog -HUP
+    echo
+}
+case "$1" in
+    start) start ;;
+    stop) stop ;;
+    restart) stop; start ;;
+    reload) reload ;;
+    status) status -p $pidfile $prog ;;
+    condrestart|try-restart) [ -f $lockfile ] && { stop; start; } ;;
+    *) echo $"Usage: $0 {start|stop|status|restart|reload|condrestart}"; exit 2 ;;
+esac
+exit $?

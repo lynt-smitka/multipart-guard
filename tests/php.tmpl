@@ -1,0 +1,8 @@
+__SNIPPET__
+index index.php index.html index.htm;
+location ~ \.php$ {
+    fastcgi_pass   127.0.0.1:9001;
+    fastcgi_index  index.php;
+    fastcgi_param  SCRIPT_FILENAME $request_filename;
+    include        /etc/nginx/fastcgi_params;
+}

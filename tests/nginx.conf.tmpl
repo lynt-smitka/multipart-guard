@@ -1,0 +1,53 @@
+# test nginx (standalone instance, does not touch the system nginx)
+pid __RUN__/nginx.pid;
+error_log __RUN__/error.log warn;
+worker_processes 4;
+user root;
+events { worker_connections 1024; }
+http {
+    include /etc/nginx/mime.types;
+    default_type application/octet-stream;
+    log_format main '$remote_addr - [$time_local] "$host" "$request" $status $body_bytes_sent "$http_user_agent" "$content_type" guard=$http_x_multipart_guard';
+    access_log __RUN__/access.log main;
+    client_body_temp_path __RUN__/body;
+    proxy_temp_path __RUN__/proxy;
+    fastcgi_temp_path __RUN__/fcgi;
+    client_max_body_size 300m;
+    sendfile on;
+    gzip on;
+    gzip_types application/json text/plain;
+    include __RUN__/conf.d/*.conf;
+
+    # vhost: 80 → redirect only, site on 443; php include in server context
+    server {
+        listen 127.0.0.1:8081;
+        server_name test.local;
+        return 301 https://$host:8443$request_uri;
+    }
+    server {
+        listen 127.0.0.1:8443 ssl;
+        http2 on;
+        server_name test.local;
+        root __WWW__;
+        ssl_certificate __RUN__/cert.pem;
+        ssl_certificate_key __RUN__/key.pem;
+        try_files $uri $uri/ /dump.php$is_args$args;
+        include __RUN__/php;
+    }
+    # vhost with PHP directly on 80
+    server {
+        listen 127.0.0.1:8082;
+        server_name plain.local;
+        root __WWW__;
+        include __RUN__/php;
+    }
+    # variant: include inside a location
+    server {
+        listen 127.0.0.1:8083;
+        server_name load.local;
+        root __WWW__;
+        location ~ \.php$ {
+            include __RUN__/php.load;
+        }
+    }
+}

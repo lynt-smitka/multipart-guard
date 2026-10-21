@@ -1,0 +1,14 @@
+/var/log/multipart-guard/*.log {
+    daily
+    rotate 14
+    compress
+    delaycompress
+    missingok
+    notifempty
+    create 0640 multipart-guard multipart-guard
+    sharedscripts
+    postrotate
+        if [ -x /bin/systemctl ]; then /bin/systemctl reload multipart-guard.service >/dev/null 2>&1 || true;
+        else /sbin/service multipart-guard reload >/dev/null 2>&1 || true; fi
+    endscript
+}

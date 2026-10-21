@@ -1,0 +1,42 @@
+# /etc/multipart-guard/config  (root:multipart-guard 0640 – contains the token)
+# Where the guard listens; the web server proxies multipart/form-data requests here.
+listen = 127.0.0.1:8090
+# log = parse and log only, forward the ORIGINAL body; sanitize = clean and re-assemble; block = multipart → 403
+mode = log
+# Secret token (openssl rand -hex 24). The guard sends it in X-Multipart-Guard; the web server recognizes the
+# second pass by it. The same value goes into the nginx map (nginx/multipart-guard.conf) or Caddy env.
+token = CHANGE_ME_openssl_rand_hex_24
+# Where to send the request back: the web server on the same host. Port and scheme come from
+# X-Guard-Orig-Port / X-Guard-Orig-Proto (https → TLS on 443 with SNI = Host, certificate not verified).
+upstream_host = 127.0.0.1
+upstream_port_http = 80
+upstream_port_https = 443
+upstream_use_orig_port = yes
+upstream_tls_verify = no
+# Strict parser limits
+max_body = 256M
+max_parts = 1000
+max_part_header_size = 8k
+max_part_headers = 8
+max_name_length = 1024
+max_filename_length = 1024
+max_part_content_type_length = 255
+# Parts whose field name starts with one of these prefixes are dropped (PHP session.upload_progress)
+drop_name_prefixes = PHP_SESSION
+# Spool: up to spool_memory in RAM, larger bodies in an (immediately unlinked) temp file in spool_dir
+spool_dir = /var/tmp/multipart-guard
+spool_memory = 1M
+# JSON log, one object per line; SIGHUP reopens it (logrotate). "stdout" for journald.
+log = /var/log/multipart-guard/guard.log
+log_passthrough = no
+# Headers set to the original client IP for the web server's real-IP module on the second pass.
+# Default X-Guard-Orig-IP. If your server already uses another real_ip_header (CF-Connecting-IP,
+# X-Forwarded-For), list it too: X-Guard-Orig-IP, CF-Connecting-IP
+real_ip_headers = X-Guard-Orig-IP
+# Timeouts
+read_header_timeout = 30s
+body_timeout = 600s
+upstream_timeout = 600s
+idle_timeout = 75s
+shutdown_timeout = 30s
+# pidfile – only for SysV init: pidfile = /var/run/multipart-guard/guard.pid

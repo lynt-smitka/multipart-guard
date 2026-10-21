@@ -1,0 +1,16 @@
+[global]
+pid = __RUN__/php-fpm.pid
+error_log = __RUN__/php-fpm.log
+daemonize = yes
+[test]
+user = root
+group = root
+listen = 127.0.0.1:9001
+pm = static
+pm.max_children = 8
+php_admin_value[upload_max_filesize] = 300M
+php_admin_value[post_max_size] = 300M
+php_admin_value[max_file_uploads] = 50
+php_admin_value[max_input_vars] = 5000
+php_admin_value[upload_tmp_dir] = __RUN__/upload
+php_admin_value[memory_limit] = 512M

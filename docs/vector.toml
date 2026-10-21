@@ -1,0 +1,15 @@
+# Vector example: ship the JSON log to your log store (VictoriaLogs, Loki, Elasticsearch …).
+[sources.multipart_guard]
+type = "file"
+include = ["/var/log/multipart-guard/guard.log"]
+
+[transforms.multipart_guard_json]
+type = "remap"
+inputs = ["multipart_guard"]
+source = '''
+. = merge(., parse_json!(string!(.message)))
+del(.message)
+.service = "multipart-guard"
+.host = get_hostname!()
+'''
+# add "multipart_guard_json" to the inputs of your sink

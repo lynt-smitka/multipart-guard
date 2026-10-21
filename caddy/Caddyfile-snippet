@@ -1,0 +1,43 @@
+# multipart-guard for Caddy 2.7+
+#
+# 1) Global options: the second pass comes from loopback and carries the client IP in X-Guard-Orig-IP.
+#    {client_ip} then holds the original address; {remote_host} stays 127.0.0.1.
+{
+    servers {
+        trusted_proxies static 127.0.0.1/32
+        client_ip_headers X-Guard-Orig-IP
+    }
+}
+
+# 2) Snippet to import in every site, BEFORE php_fastcgi:
+(multipart_guard) {
+    @mg_multipart {
+        header Content-Type multipart/form-data*
+        not header X-Multipart-Guard {$MULTIPART_GUARD_TOKEN}
+    }
+    handle @mg_multipart {
+        reverse_proxy 127.0.0.1:8090 {
+            header_up Host {host}
+            header_up X-Guard-Orig-IP {remote_host}
+            header_up X-Guard-Orig-Proto {scheme}
+            header_up X-Guard-Orig-Port {server_port}
+            transport http {
+                read_timeout 600s
+                write_timeout 600s
+            }
+        }
+    }
+}
+
+# 3) In a site: import the snippet and set REMOTE_ADDR from {client_ip} – Caddy's fastcgi transport
+#    takes REMOTE_ADDR from the connection address, which is 127.0.0.1 on the second pass.
+# example.com {
+#     import multipart_guard
+#     php_fastcgi unix//run/php-fpm/www.sock {
+#         env REMOTE_ADDR {client_ip}
+#     }
+#     file_server
+# }
+#
+# MULTIPART_GUARD_TOKEN must equal "token" in the guard config (EnvironmentFile in Caddy's systemd unit).
+# Not yet tested in production – based on Caddy docs and the fastcgi transport source.

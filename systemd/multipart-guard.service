@@ -1,0 +1,24 @@
+[Unit]
+Description=multipart-guard – sanitizing proxy for multipart/form-data requests
+After=network.target
+
+[Service]
+Type=simple
+User=multipart-guard
+Group=multipart-guard
+ExecStart=/usr/local/sbin/multipart-guard -config /etc/multipart-guard/config
+ExecReload=/bin/kill -HUP $MAINPID
+Restart=always
+RestartSec=2
+LimitNOFILE=65536
+NoNewPrivileges=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectSystem=full
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+
+[Install]
+WantedBy=multi-user.target

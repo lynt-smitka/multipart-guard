@@ -1,0 +1,4 @@
+dist/*
+!dist/.gitkeep
+*.log
+tests/run/
